@@ -1,0 +1,54 @@
+networks:
+  infra-db:
+    external: true
+  redis:
+    external: true
+services:
+  directus:
+    image: 'directus/directus:latest'
+    container_name: directus
+    restart: unless-stopped
+    environment:
+      - DB_CLIENT=postgres
+      - DB_HOST=$POSTGRES_HOST
+      - DB_PORT=$POSTGRES_PORT
+      - DB_DATABASE=$POSTGRES_DB
+      - DB_USER=$POSTGRES_USER
+      - DB_PASSWORD=$POSTGRES_PASSWORD
+      - CACHE_TTL=5m
+      - CACHE_SCHEMA=true
+      - CACHE_ENABLED=true
+      - CACHE_STORE=redis
+      - REDIS_HOST=$REDIS_HOST
+      - REDIS_PORT=$REDIS_PORT
+      - REDIS_PASSWORD=$REDIS_PASSWORD
+      - WEBSOCKETS_ENABLED=true
+      - PUBLIC_URL=$PUBLIC_URL
+      - SERVICE_FQDN_DIRECTUS_8055
+      - KEY=$SERVICE_BASE64_64_KEY
+      - SECRET=$SERVICE_BASE64_64_SECRET
+      - 'ADMIN_EMAIL=${ADMIN_EMAIL:-admin@example.com}'
+      - ADMIN_PASSWORD=$SERVICE_PASSWORD_ADMIN
+      - RETENTION_ENABLED=true
+      - 'RETENTION_SCHEDULE=0 0 * * *'
+      - RETENTION_BATCH=500
+      - ACTIVITY_RETENTION=15d
+      - REVISIONS_RETENTION=15d
+      - FLOW_LOGS_RETENTION=15d
+    volumes:
+      - 'directus-uploads:/directus/uploads'
+      - 'directus-extensions:/directus/extensions'
+      - 'directus-templates:/directus/templates'
+    networks:
+      - infra-db
+      - redis
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - '-q'
+        - '--spider'
+        - 'http://127.0.0.1:8055/admin/login'
+      interval: 5s
+      timeout: 20s
+      retries: 10
